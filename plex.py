@@ -79,13 +79,18 @@ def scan(config, lock, path, scan_for, section, scan_type, resleep_paths, scan_t
     checks = 0
     check_path = utils.map_pushed_path_file_exists(config, path)
     scan_path_is_directory = os.path.isdir(check_path)
+    if config['PLEX_ON_WINDOWS']:
+        win_path = utils.map_pushed_path(config, os.path.dirname(check_path).strip())
 
     while True:
         checks += 1
         if os.path.exists(check_path):
             logger.info("File '%s' exists on check %d of %d.", check_path, checks, config['SERVER_MAX_FILE_CHECKS'])
             if not scan_path or not len(scan_path):
-                scan_path = os.path.dirname(path).strip() if not scan_path_is_directory else path.strip()
+                if config['PLEX_ON_WINDOWS']:
+                    scan_path = win_path if not scan_path_is_directory else path.strip()
+                else:
+                    scan_path = os.path.dirname(path).strip() if not scan_path_is_directory else path.strip()
             break
         elif not scan_path_is_directory and config['SERVER_SCAN_FOLDER_ON_FILE_EXISTS_EXHAUSTION'] and \
                 config['SERVER_MAX_FILE_CHECKS'] - checks == 1:
@@ -124,23 +129,26 @@ def scan(config, lock, path, scan_for, section, scan_type, resleep_paths, scan_t
                 utils.rclone_rc_clear_cache(config, check_path)
 
     # build plex scanner command
-    if os.name == 'nt':
-        final_cmd = '"%s" --scan --refresh --section %s --directory "%s"' \
-                    % (config['PLEX_SCANNER'], str(section), scan_path)
+    if config['PLEX_SCAN_API']:
+        final_cmd = 'curl -X PUT "%s/library/sections/%s/refresh?path=%s&X-Plex-Token=%s"' % (config['PLEX_LOCAL_URL'], str(section), scan_path.replace( '', '%20'), config['PLEX_TOKEN'])
     else:
-        cmd = 'export LD_LIBRARY_PATH=' + config['PLEX_LD_LIBRARY_PATH'] + ';'
-        if not config['USE_DOCKER']:
-            cmd += 'export PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR=' + config['PLEX_SUPPORT_DIR'] + ';'
-        cmd += config['PLEX_SCANNER'] + ' --scan --refresh --section ' + str(section) + ' --directory ' + cmd_quote(
-            scan_path)
-
-        if config['USE_DOCKER']:
-            final_cmd = 'docker exec -u %s -i %s bash -c %s' % \
-                        (cmd_quote(config['PLEX_USER']), cmd_quote(config['DOCKER_NAME']), cmd_quote(cmd))
-        elif config['USE_SUDO']:
-            final_cmd = 'sudo -u %s bash -c %s' % (config['PLEX_USER'], cmd_quote(cmd))
+        if os.name == 'nt':
+            final_cmd = '"%s" --scan --refresh --section %s --directory "%s"' \
+                        % (config['PLEX_SCANNER'], str(section), scan_path)
         else:
-            final_cmd = cmd
+            cmd = 'export LD_LIBRARY_PATH=' + config['PLEX_LD_LIBRARY_PATH'] + ';'
+            if not config['USE_DOCKER']:
+                cmd += 'export PLEX_MEDIA_SERVER_APPLICATION_SUPPORT_DIR=' + config['PLEX_SUPPORT_DIR'] + ';'
+            cmd += config['PLEX_SCANNER'] + ' --scan --refresh --section ' + str(section) + ' --directory ' + cmd_quote(
+                scan_path)
+
+            if config['USE_DOCKER']:
+                final_cmd = 'docker exec -u %s -i %s bash -c %s' % \
+                            (cmd_quote(config['PLEX_USER']), cmd_quote(config['DOCKER_NAME']), cmd_quote(cmd))
+            elif config['USE_SUDO']:
+                final_cmd = 'sudo -u %s bash -c %s' % (config['PLEX_USER'], cmd_quote(cmd))
+            else:
+                final_cmd = cmd
 
     # invoke plex scanner
     priority = utils.get_priority(config, scan_path)
@@ -191,10 +199,13 @@ def scan(config, lock, path, scan_for, section, scan_type, resleep_paths, scan_t
         # begin scan
         logger.info("Running Plex Media Scanner for: %s", scan_path)
         logger.debug(final_cmd)
-        if os.name == 'nt':
+        if config['PLEX_SCAN_API']:
             utils.run_command(final_cmd)
         else:
-            utils.run_command(final_cmd.encode("utf-8"))
+            if os.name == 'nt':
+                utils.run_command(final_cmd)
+            else:
+                utils.run_command(final_cmd.encode("utf-8"))
         logger.info("Finished scan!")
 
         # remove item from Plex database if sqlite is enabled
