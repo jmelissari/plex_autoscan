@@ -26,6 +26,9 @@ def get_plex_section(conf, path):
         plexsections = plex.get_detailed_sections_info(conf)
         for section in plexsections:
             for root_path in section.paths:
+                if conf.configs['PLEX_ON_WINDOWS']:
+                    root_path = root_path[:-1]
+                    logger.debug("Removing a trailing slash that is added when using Windows Plex on Linux Scanner")
                 if path.startswith(root_path):
                     logger.debug("Plex Library Section ID '%s' matching root folder '%s' was found in the Plex DB.",
                                   section.id, root_path)
