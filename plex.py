@@ -130,7 +130,7 @@ def scan(config, lock, path, scan_for, section, scan_type, resleep_paths, scan_t
 
     # build plex scanner command
     if config['PLEX_SCAN_API']:
-        final_cmd = 'curl -X PUT "%s/library/sections/%s/refresh?path=%s&X-Plex-Token=%s"' % (config['PLEX_LOCAL_URL'], str(section), scan_path.replace( '', '%20'), config['PLEX_TOKEN'])
+        final_cmd = 'curl -X PUT "%s/library/sections/%s/refresh?path=%s&X-Plex-Token=%s"' % (config['PLEX_LOCAL_URL'], str(section), scan_path.replace( ' ', '%20'), config['PLEX_TOKEN'])
     else:
         if os.name == 'nt':
             final_cmd = '"%s" --scan --refresh --section %s --directory "%s"' \
