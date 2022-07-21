@@ -42,6 +42,8 @@ class Config(object):
         'PLEX_TOKEN': '',
         'PLEX_CHECK_BEFORE_SCAN': False,
         'PLEX_SECTION_PATH_MAPPINGS_WITH_API': False,
+        'PLEX_ON_WINDOWS': False,
+        'PLEX_SCAN_API': False,
         'SERVER_IP': '0.0.0.0',
         'SERVER_PORT': 3467,
         'SERVER_PASS': uuid.uuid4().hex,

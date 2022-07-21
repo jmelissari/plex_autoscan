@@ -394,6 +394,11 @@ Sample output:
 
 `PLEX_SECTION_PATH_MAPPINGS_WITH_API` - Use the Plex Server's API to obtain Section Paths instead of querying the sqlite database directly. Default is `false`.
 
+`PLEX_ON_WINDOWS` - When using the API scanner from a linux version of plex_autoscan it will add a trailing slash to the root path. When running plex on windows, this fails to match to a library. This will remove the '/' that is added to the end and also all the os.path.dirname fucntion to work properly. You will need to add a mapping for your docker container/linux server to the `SERVER_PATH_MAPPINGS` so it will convert the file location and scan the folder. Default is `false`.
+
+`PLEX_SCAN_API` - This will enable a scan against the PLEX API instead of using a local scanner. This allows you to run in on linux or in a docker while your Plext install is on windows. Default is `false`.
+
+
 ### Plex Emptying Trash
 
 When media is upgraded by Sonarr/Radarr/Lidarr, the previous files are then deleted. When Plex gets the scan request after the upgrade, the new media is added in to the library, but the previous media files would still be listed there but labeled as "unavailable".
