@@ -233,7 +233,8 @@ def scan(config, lock, path, scan_for, section, scan_type, resleep_paths, scan_t
                 logger.debug("Skipping emptying trash as there were no deleted items.")
             else:
                 logger.info("Emptying trash to clear %d deleted items...", deleted_items)
-                empty_trash(config, str(section))
+                
+            empty_trash(config, str(section))
 
         # analyze movie/episode
         if config['PLEX_ANALYZE_TYPE'].lower() != 'off' and not scan_path_is_directory:
